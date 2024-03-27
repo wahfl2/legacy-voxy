@@ -9,7 +9,9 @@ import me.cortex.voxy.common.storage.config.StorageConfig;
 import me.cortex.voxy.common.storage.other.CompressionStorageAdaptor;
 import me.cortex.voxy.common.storage.rocksdb.RocksDBStorageBackend;
 import me.cortex.voxy.common.world.WorldEngine;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.multiplayer.WorldClient;
 import net.minecraft.client.world.ClientWorld;
 import net.minecraft.util.WorldSavePath;
 
@@ -100,9 +102,9 @@ public class ContextSelectionSystem {
     }
 
     //Gets dimension independent base world, if singleplayer, its the world name, if multiplayer, its the server ip
-    private static Path getBasePath(ClientWorld world) {
+    private static Path getBasePath(WorldClient world) {
         //TODO: improve this
-        Path basePath = MinecraftClient.getInstance().runDirectory.toPath().resolve(".voxy").resolve("saves");
+        Path basePath = Minecraft.getInstance().runDirectory.toPath().resolve(".voxy").resolve("saves");
         var iserver = MinecraftClient.getInstance().getServer();
         if (iserver != null) {
             basePath = iserver.getSavePath(WorldSavePath.ROOT).resolve("voxy");
@@ -140,8 +142,8 @@ public class ContextSelectionSystem {
         return hexString.toString();
     }
 
-    private static String getWorldId(ClientWorld world) {
-        String data = world.getBiomeAccess().seed + world.getRegistryKey().toString();
+    private static String getWorldId(WorldClient world) {
+        String data = world.getSeed() + world.getRegistryKey().toString();
         try {
             return bytesToHex(MessageDigest.getInstance("SHA-256").digest(data.getBytes())).substring(0, 32);
         } catch (
@@ -156,7 +158,7 @@ public class ContextSelectionSystem {
     }
 
 
-    public Selection getBestSelectionOrCreate(ClientWorld world) {
+    public Selection getBestSelectionOrCreate(WorldClient world) {
         var path = getBasePath(world);
         try {
             Files.createDirectories(path);
