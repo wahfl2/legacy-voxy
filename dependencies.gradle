@@ -41,5 +41,11 @@ minecraft {
 
 dependencies {
     runtimeOnlyNonPublishable("com.github.GTNewHorizons:NotEnoughItems:2.5.4-GTNH:dev")
+
     implementation("com.github.GTNewHorizons:lwjgl3ify:2.0.2:dev")
+    implementation("org.rocksdb:rocksdbjni:8.10.0")
+    implementation("redis.clients:jedis:5.1.0")
+    implementation("org.apache.commons:commons-pool2:2.12.0")
+
+    api("it.unimi.dsi:fastutil:8.5.13")
 }
