@@ -3,6 +3,8 @@ package me.cortex.voxy.client.core.rendering;
 //NOTE: an idea on how to do it is so that any render section, we _keep_ aquired (yes this will be very memory intensive)
 // could maybe tosomething else
 
+import com.gtnewhorizons.angelica.compat.mojang.Camera;
+import com.gtnewhorizons.angelica.glsm.RenderSystem;
 import com.mojang.blaze3d.systems.RenderSystem;
 import it.unimi.dsi.fastutil.ints.IntArrayList;
 import me.cortex.voxy.client.core.gl.GlBuffer;
@@ -12,9 +14,10 @@ import me.cortex.voxy.client.core.rendering.util.DownloadStream;
 import me.cortex.voxy.client.core.rendering.util.UploadStream;
 import me.cortex.voxy.common.world.other.Mapper;
 import net.minecraft.block.Blocks;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.render.Camera;
-import net.minecraft.client.render.Frustum;
+import net.minecraft.client.renderer.culling.Frustrum;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.registry.RegistryKeys;
 import net.minecraft.util.Identifier;
@@ -71,8 +74,8 @@ public abstract class AbstractFarWorldRenderer <T extends Viewport> {
         this.models = new ModelManager(16);
     }
 
-    public void setupRender(Frustum frustum, Camera camera) {
-        this.frustum = frustum.frustumIntersection;
+    public void setupRender(Camera camera) {
+        // this.frustum = frustum.frustumIntersection;
 
         this.sx = camera.getBlockPos().getX() >> 5;
         this.sy = camera.getBlockPos().getY() >> 5;
@@ -85,7 +88,7 @@ public abstract class AbstractFarWorldRenderer <T extends Viewport> {
         DownloadStream.INSTANCE.tick();
 
         //Update the lightmap
-        {
+        /* {
             long upload = UploadStream.INSTANCE.upload(this.lightDataBuffer, 0, 256*4);
             var lmt = MinecraftClient.getInstance().gameRenderer.getLightmapTextureManager().texture.getImage();
             for (int light = 0; light < 256; light++) {
@@ -95,7 +98,7 @@ public abstract class AbstractFarWorldRenderer <T extends Viewport> {
                 sample = ((sample&0xFF0000)>>16)|(sample&0xFF00)|((sample&0xFF)<<16);
                 MemoryUtil.memPutInt(upload + (((x<<4)|(15-y))*4), sample|(0xFF<<28));//Skylight is inverted
             }
-        }
+        } */
 
         //Upload any new geometry
         this.updatedSectionIds = this.geometry.uploadResults();
@@ -103,12 +106,14 @@ public abstract class AbstractFarWorldRenderer <T extends Viewport> {
             boolean didHaveBiomeChange = false;
 
             //Do any BiomeChanges
+            /*
             while (!this.biomeUpdates.isEmpty()) {
                 var update = this.biomeUpdates.pop();
                 var biomeReg = MinecraftClient.getInstance().world.getRegistryManager().get(RegistryKeys.BIOME);
                 this.models.addBiome(update.id, biomeReg.get(new Identifier(update.biome)));
                 didHaveBiomeChange = true;
             }
+             */
 
             if (didHaveBiomeChange) {
                 UploadStream.INSTANCE.commit();
@@ -126,8 +131,8 @@ public abstract class AbstractFarWorldRenderer <T extends Viewport> {
 
         //TODO: fix this in a better way than this ungodly hacky stuff, causes clouds to dissapear
         //RenderSystem.setShaderFogColor(1f, 1f, 1f, 0f);
-        RenderSystem.setShaderFogEnd(99999999);
-        RenderSystem.setShaderFogStart(9999999);
+//        RenderSystem.setShaderFogEnd(99999999);
+//        RenderSystem.setShaderFogStart(9999999);
     }
 
     public abstract void renderFarAwayOpaque(T viewport);

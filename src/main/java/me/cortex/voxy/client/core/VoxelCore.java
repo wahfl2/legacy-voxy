@@ -1,5 +1,6 @@
 package me.cortex.voxy.client.core;
 
+import com.gtnewhorizons.angelica.compat.mojang.Camera;
 import com.mojang.blaze3d.platform.GlStateManager;
 import com.mojang.blaze3d.systems.RenderSystem;
 import me.cortex.voxy.client.Voxy;
@@ -132,14 +133,14 @@ public class VoxelCore {
     }
 
     boolean firstTime = true;
-    public void renderSetup(Frustum frustum, Camera camera) {
+    public void renderSetup(Camera camera) {
         if (this.firstTime) {
             this.distanceTracker.init(camera.getBlockPos().getX(), camera.getBlockPos().getZ());
             this.firstTime = false;
             //this.renderTracker.addLvl0(0,6,0);
         }
         this.distanceTracker.setCenter(camera.getBlockPos().getX(), camera.getBlockPos().getY(), camera.getBlockPos().getZ());
-        this.renderer.setupRender(frustum, camera);
+        this.renderer.setupRender(camera);
     }
 
     private static Matrix4f makeProjectionMatrix(float near, float far) {

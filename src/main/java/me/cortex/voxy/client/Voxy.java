@@ -1,36 +1,51 @@
 package me.cortex.voxy.client;
 
+import com.gtnewhorizons.angelica.proxy.CommonProxy;
+import com.myname.mymodid.Tags;
+import cpw.mods.fml.common.Mod;
+import cpw.mods.fml.common.SidedProxy;
+import cpw.mods.fml.common.event.FMLInitializationEvent;
+import cpw.mods.fml.common.event.FMLPostInitializationEvent;
+import cpw.mods.fml.common.event.FMLPreInitializationEvent;
 import me.cortex.voxy.client.core.VoxelCore;
 import me.cortex.voxy.client.saver.ContextSelectionSystem;
-import me.cortex.voxy.client.terrain.WorldImportCommand;
 import me.cortex.voxy.common.config.Serialization;
-import net.fabricmc.api.ClientModInitializer;
-import net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallback;
-import net.fabricmc.loader.api.FabricLoader;
-import net.fabricmc.loader.api.ModContainer;
-import net.minecraft.client.world.ClientWorld;
+import net.minecraft.client.multiplayer.WorldClient;
 
-public class Voxy implements ClientModInitializer {
-    public static final String VERSION;
+@Mod(
+    modid = "voxy",
+    name = "voxy",
+    version = Tags.VERSION,
+    dependencies = " before:lwjgl3ify@[1.5.3,);" + " after:angelica@[1.0.0-alpha35,);",
+    acceptedMinecraftVersions = "[1.7.10]",
+    acceptableRemoteVersions = "*"
+)
+public class Voxy {
+    public static final String VERSION = Tags.VERSION;
 
-    static {
-        ModContainer mod = (ModContainer) FabricLoader.getInstance().getModContainer("voxy").orElseThrow(NullPointerException::new);
-        VERSION = mod.getMetadata().getVersion().getFriendlyString();
+    @SidedProxy(clientSide = "me.cortex.voxy.proxy.ClientProxy", serverSide = "me.cortex.voxy.proxy.CommonProxy")
+    public static CommonProxy proxy;
+
+    @Mod.EventHandler
+    public void preInit(FMLPreInitializationEvent event) {
+        proxy.preInit(event);
     }
 
-    @Override
-    public void onInitializeClient() {
+    @Mod.EventHandler
+    public void init(FMLInitializationEvent event) {
         Serialization.init();
+        proxy.init(event);
+    }
 
-        ClientCommandRegistrationCallback.EVENT.register((dispatcher, registryAccess) -> {
-            dispatcher.register(WorldImportCommand.register());
-        });
+    @Mod.EventHandler
+    public void postInit(FMLPostInitializationEvent event) {
+        proxy.postInit(event);
     }
 
 
     private static final ContextSelectionSystem selector = new ContextSelectionSystem();
 
-    public static VoxelCore createVoxelCore(ClientWorld world) {
+    public static VoxelCore createVoxelCore(WorldClient world) {
         var selection = selector.getBestSelectionOrCreate(world);
         return new VoxelCore(selection);
     }

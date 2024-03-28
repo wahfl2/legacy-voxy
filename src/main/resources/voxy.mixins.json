@@ -7,10 +7,10 @@
     "minecraft.MixinClientChunkManager",
     "minecraft.MixinDebugHud",
     "minecraft.MixinMinecraftClient",
-    "minecraft.MixinWorldRenderer",
+    "minecraft.MixinRenderGlobal",
     "sodium.MixinSodiumWorldRender",
     "sodium.MixinDefaultChunkRenderer",
-    "sodium.MixinRenderSectionManager",
+    "sodium.MixinChunkProviderClient",
     "nvidium.MixinRenderPipeline"
   ],
   "injectors": {

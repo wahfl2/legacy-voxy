@@ -1,5 +1,6 @@
 package me.cortex.voxy.client.core.model;
 
+import com.gtnewhorizons.angelica.compat.toremove.RenderLayer;
 import com.mojang.blaze3d.platform.GlConst;
 import com.mojang.blaze3d.platform.GlStateManager;
 import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
