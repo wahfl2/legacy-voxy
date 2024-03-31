@@ -1,12 +1,18 @@
 package me.cortex.voxy.common.world.service;
 
+import com.gtnewhorizons.angelica.compat.mojang.ChunkSectionPos;
+import com.gtnewhorizons.neid.mixins.interfaces.IExtendedBlockStorageMixin;
 import it.unimi.dsi.fastutil.Pair;
+import me.cortex.voxy.client.importers.util.ChunkBiomes;
+import me.cortex.voxy.client.importers.util.SectionBlockData;
 import me.cortex.voxy.common.voxelization.VoxelizedSection;
 import me.cortex.voxy.common.voxelization.WorldConversionFactory;
 import me.cortex.voxy.common.world.WorldEngine;
 import net.minecraft.util.math.ChunkSectionPos;
 import net.minecraft.world.LightType;
+import net.minecraft.world.chunk.Chunk;
 import net.minecraft.world.chunk.ChunkNibbleArray;
+import net.minecraft.world.chunk.NibbleArray;
 import net.minecraft.world.chunk.WorldChunk;
 import net.minecraft.world.chunk.light.LightStorage;
 
@@ -19,10 +25,10 @@ public class VoxelIngestService {
     private volatile boolean running = true;
     private final Thread[] workers;
 
-    private final ConcurrentLinkedDeque<WorldChunk> ingestQueue = new ConcurrentLinkedDeque<>();
+    private final ConcurrentLinkedDeque<Chunk> ingestQueue = new ConcurrentLinkedDeque<>();
     private final Semaphore ingestCounter = new Semaphore(0);
 
-    private final ConcurrentHashMap<Long, Pair<ChunkNibbleArray, ChunkNibbleArray>> captureLightMap = new ConcurrentHashMap<>(1000,0.75f, 7);
+    private final ConcurrentHashMap<Long, Pair<NibbleArray, NibbleArray>> captureLightMap = new ConcurrentHashMap<>(1000,0.75f, 7);
 
     private final WorldEngine world;
     public VoxelIngestService(WorldEngine world, int workers) {
@@ -42,36 +48,45 @@ public class VoxelIngestService {
         while (this.running) {
             this.ingestCounter.acquireUninterruptibly();
             if (!this.running) break;
-            var chunk = this.ingestQueue.pop();
-            int i = chunk.getBottomSectionCoord() - 1;
-            for (var section : chunk.getSectionArray()) {
+
+            Chunk chunk = this.ingestQueue.pop();
+            ChunkBiomes biomes = new ChunkBiomes(chunk);
+
+            int i = -1;
+            for (var section : chunk.getBlockStorageArray()) {
                 i++;
-                var lighting = this.captureLightMap.remove(ChunkSectionPos.from(chunk.getPos(), i).asLong());
+                var lighting = this.captureLightMap.remove(ChunkSectionPos.from(chunk.xPosition, chunk.zPosition, i).asLong());
                 if (section.isEmpty()) {
-                    this.world.insertUpdate(VoxelizedSection.createEmpty(chunk.getPos().x, i, chunk.getPos().z));
+                    this.world.insertUpdate(VoxelizedSection.createEmpty(chunk.xPosition, i, chunk.zPosition));
                 } else {
-                    VoxelizedSection csec = WorldConversionFactory.convert(
+                    VoxelizedSection csec;
+                    if (section instanceof IExtendedBlockStorageMixin ebsMixin) {
+
+                    } else {
+                        csec = WorldConversionFactory.convert(
                             this.world.getMapper(),
-                            section.getBlockStateContainer(),
-                            section.getBiomeContainer(),
+                            section,
+                            biomes,
                             (x, y, z, state) -> {
-                                if (lighting == null || ((lighting.first() != null && lighting.first().isUninitialized())&&(lighting.second()!=null&&lighting.second().isUninitialized()))) {
+                                if (lighting == null || (lighting.first() != null && lighting.second()!=null)) {
                                     return (byte) 0x0f;
                                 } else {
                                     //Lighting is a piece of shit cause its done per face
                                     int block = lighting.first()!=null?Math.min(15,lighting.first().get(x, y, z)):0;
                                     int sky = lighting.second()!=null?Math.min(15,lighting.second().get(x, y, z)):0;
-                                    if (block<state.getLuminance()) {
-                                        block = state.getLuminance();
+                                    if (block < state.getLightValue()) {
+                                        block = state.getLightValue();
                                     }
                                     sky = 15-sky;//This is cause sky light is inverted which saves memory when saving empty sections
                                     return (byte) (sky|(block<<4));
                                 }
                             },
-                            chunk.getPos().x,
+                            chunk.xPosition,
                             i,
-                            chunk.getPos().z
-                    );
+                            chunk.zPosition
+                        );
+                    }
+
                     WorldConversionFactory.mipSection(csec, this.world.getMapper());
                     this.world.insertUpdate(csec);
                 }
@@ -79,7 +94,7 @@ public class VoxelIngestService {
         }
     }
 
-    private static void fetchLightingData(Map<Long, Pair<ChunkNibbleArray, ChunkNibbleArray>> out, WorldChunk chunk) {
+    private static void fetchLightingData(Map<Long, Pair<NibbleArray, NibbleArray>> out, Chunk chunk) {
         var lightingProvider = chunk.getWorld().getLightingProvider();
         var blp = lightingProvider.get(LightType.BLOCK);
         var slp = lightingProvider.get(LightType.SKY);
@@ -109,7 +124,7 @@ public class VoxelIngestService {
         }
     }
 
-    public void enqueueIngest(WorldChunk chunk) {
+    public void enqueueIngest(Chunk chunk) {
         fetchLightingData(this.captureLightMap, chunk);
         this.ingestQueue.add(chunk);
         this.ingestCounter.release();

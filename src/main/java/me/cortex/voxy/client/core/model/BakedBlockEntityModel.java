@@ -1,5 +1,7 @@
 package me.cortex.voxy.client.core.model;
 
+import com.gtnewhorizons.angelica.compat.toremove.RenderLayer;
+import com.gtnewhorizons.angelica.compat.toremove.VertexConsumer;
 import net.minecraft.block.BlockEntityProvider;
 import net.minecraft.block.BlockState;
 import net.minecraft.client.MinecraftClient;

@@ -1,39 +1,47 @@
 package me.cortex.voxy.client.importers;
 
+import com.google.common.base.Supplier;
+import com.google.common.base.Suppliers;
+import com.gtnewhorizons.neid.mixins.interfaces.IExtendedBlockStorageMixin;
 import com.mojang.serialization.Codec;
+import me.cortex.voxy.client.Voxy;
 import me.cortex.voxy.client.core.util.ByteBufferBackedInputStream;
+import me.cortex.voxy.client.importers.util.ChunkBiomes;
+import me.cortex.voxy.client.importers.util.ChunkStreamVersion;
 import me.cortex.voxy.common.voxelization.VoxelizedSection;
 import me.cortex.voxy.common.voxelization.WorldConversionFactory;
 import me.cortex.voxy.common.world.WorldEngine;
-import me.cortex.voxy.common.world.other.Mipper;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
-import net.minecraft.nbt.*;
-import net.minecraft.network.PacketByteBuf;
-import net.minecraft.registry.RegistryKeys;
-import net.minecraft.registry.entry.RegistryEntry;
-import net.minecraft.util.collection.IndexedIterable;
+import net.minecraft.nbt.CompressedStreamTools;
+import net.minecraft.nbt.NBTTagCompound;
+import net.minecraft.nbt.NBTTagList;
 import net.minecraft.world.World;
-import net.minecraft.world.biome.Biome;
-import net.minecraft.world.biome.BiomeKeys;
-import net.minecraft.world.chunk.ChunkNibbleArray;
+import net.minecraft.world.chunk.Chunk;
+import net.minecraft.world.chunk.NibbleArray;
 import net.minecraft.world.chunk.PalettedContainer;
-import net.minecraft.world.chunk.ReadableContainer;
-import net.minecraft.world.storage.ChunkStreamVersion;
+import net.minecraft.world.chunk.storage.AnvilChunkLoader;
+import net.minecraft.world.chunk.storage.ExtendedBlockStorage;
+import net.minecraft.world.chunk.storage.RegionFile;
+import net.minecraftforge.common.BiomeManager;
+import net.minecraftforge.common.util.Constants;
 import org.lwjgl.system.MemoryUtil;
 
-import java.io.*;
+import java.io.DataInputStream;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
 import java.nio.ByteOrder;
 import java.nio.channels.FileChannel;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Consumer;
-import java.util.function.Function;
-import java.util.function.Predicate;
 
 public class WorldImporter {
     public interface UpdateCallback {
@@ -41,60 +49,25 @@ public class WorldImporter {
     }
 
     private final WorldEngine world;
-    private final ReadableContainer<RegistryEntry<Biome>> defaultBiomeProvider;
-    private final Codec<ReadableContainer<RegistryEntry<Biome>>> biomeCodec;
     private final AtomicInteger totalRegions = new AtomicInteger();
     private final AtomicInteger regionsProcessed = new AtomicInteger();
+
+    private static final Supplier<List<BiomeManager.BiomeEntry>> ALL_BIOMES = Suppliers.memoize(() -> {
+        Set<BiomeManager.BiomeEntry> biomeSet = new HashSet<>();
+
+        for (var biomeType : BiomeManager.BiomeType.values()) {
+            var toAdd = BiomeManager.getBiomes(biomeType);
+            if (toAdd != null) {
+                biomeSet.addAll(toAdd);
+            }
+        }
+
+        return biomeSet.stream().toList();
+    });
 
     private volatile boolean isRunning;
     public WorldImporter(WorldEngine worldEngine, World mcWorld) {
         this.world = worldEngine;
-
-        var biomeRegistry = mcWorld.getRegistryManager().get(RegistryKeys.BIOME);
-        var defaultBiome = biomeRegistry.entryOf(BiomeKeys.PLAINS);
-        this.defaultBiomeProvider = new ReadableContainer<RegistryEntry<Biome>>() {
-            @Override
-            public RegistryEntry<Biome> get(int x, int y, int z) {
-                return defaultBiome;
-            }
-
-            @Override
-            public void forEachValue(Consumer<RegistryEntry<Biome>> action) {
-
-            }
-
-            @Override
-            public void writePacket(PacketByteBuf buf) {
-
-            }
-
-            @Override
-            public int getPacketSize() {
-                return 0;
-            }
-
-            @Override
-            public boolean hasAny(Predicate<RegistryEntry<Biome>> predicate) {
-                return false;
-            }
-
-            @Override
-            public void count(PalettedContainer.Counter<RegistryEntry<Biome>> counter) {
-
-            }
-
-            @Override
-            public PalettedContainer<RegistryEntry<Biome>> slice() {
-                return null;
-            }
-
-            @Override
-            public Serialized<RegistryEntry<Biome>> serialize(IndexedIterable<RegistryEntry<Biome>> idList, PalettedContainer.PaletteProvider paletteProvider) {
-                return null;
-            }
-        };
-
-        this.biomeCodec = PalettedContainer.createReadableContainerCodec(biomeRegistry.getIndexedEntries(), biomeRegistry.createEntryCodec(), PalettedContainer.PaletteProvider.BIOME, biomeRegistry.entryOf(BiomeKeys.PLAINS));
     }
 
 
@@ -190,7 +163,7 @@ public class WorldImporter {
                                 if (decompressedData == null) {
                                     System.err.println("Error decompressing chunk data");
                                 } else {
-                                    var nbt = NbtIo.readCompound(decompressedData);
+                                    var nbt = CompressedStreamTools.read(decompressedData);
                                     this.importChunkNBT(nbt);
                                 }
                             }
@@ -215,14 +188,18 @@ public class WorldImporter {
         }
     }
 
-    private void importChunkNBT(NbtCompound chunk) {
+    private void importChunkNBT(NBTTagCompound chunk) {
         try {
-            int x = chunk.getInt("xPos");
-            int z = chunk.getInt("zPos");
-            for (var sectionE : chunk.getList("sections", NbtElement.COMPOUND_TYPE)) {
-                var section = (NbtCompound) sectionE;
-                int y = section.getInt("Y");
-                this.importSectionNBT(x, y, z, section);
+            int x = chunk.getInteger("xPos");
+            int z = chunk.getInteger("zPos");
+            ChunkBiomes biomes = new ChunkBiomes(chunk.getByteArray("Biomes"));
+
+            NBTTagList tagList = chunk.getTagList("sections", Constants.NBT.TAG_COMPOUND);
+
+            for (int i = 0; i < tagList.tagCount(); i++) {
+                NBTTagCompound section = tagList.getCompoundTagAt(i);
+                int y = section.getInteger("Y");
+                this.importSectionNBT(x, y, z, section, biomes);
             }
         } catch (Exception e) {
             System.err.println("Exception importing world chunk:");
@@ -234,32 +211,29 @@ public class WorldImporter {
         return y << 8 | z << 4 | x;
     }
 
-
     private static final Codec<PalettedContainer<BlockState>> BLOCK_STATE_CODEC = PalettedContainer.createPalettedContainerCodec(Block.STATE_IDS, BlockState.CODEC, PalettedContainer.PaletteProvider.BLOCK_STATE, Blocks.AIR.getDefaultState());
-    private void importSectionNBT(int x, int y, int z, NbtCompound section) {
-        if (section.getCompound("block_states").isEmpty()) {
-            return;
-        }
+    private void importSectionNBT(int x, int y, int z, NBTTagCompound section, ChunkBiomes biomes) {
+//        if (section.getCompoundTag("block_states").isEmpty()) {
+//            return;
+//        }
 
         byte[] blockLightData = section.getByteArray("BlockLight");
         byte[] skyLightData = section.getByteArray("SkyLight");
 
-        ChunkNibbleArray blockLight;
+        NibbleArray blockLight;
         if (blockLightData.length != 0) {
-            blockLight = new ChunkNibbleArray(blockLightData);
+            blockLight = new NibbleArray(blockLightData, 4);
         } else {
             blockLight = null;
         }
 
-        ChunkNibbleArray skyLight;
+        NibbleArray skyLight;
         if (skyLightData.length != 0) {
-            skyLight = new ChunkNibbleArray(skyLightData);
+            skyLight = new NibbleArray(skyLightData, 4);
         } else {
             skyLight = null;
         }
 
-        var blockStates = BLOCK_STATE_CODEC.parse(NbtOps.INSTANCE, section.getCompound("block_states")).result().get();
-        var biomes = this.biomeCodec.parse(NbtOps.INSTANCE, section.getCompound("biomes")).result().orElse(this.defaultBiomeProvider);
         VoxelizedSection csec = WorldConversionFactory.convert(
                 this.world.getMapper(),
                 blockStates,

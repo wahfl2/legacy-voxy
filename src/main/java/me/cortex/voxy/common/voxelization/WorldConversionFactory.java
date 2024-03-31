@@ -1,21 +1,23 @@
 package me.cortex.voxy.common.voxelization;
 
 import it.unimi.dsi.fastutil.objects.Reference2IntOpenHashMap;
-import me.cortex.voxy.common.world.other.Mipper;
+import me.cortex.voxy.client.importers.util.ChunkBiomes;
+import me.cortex.voxy.client.importers.util.SectionBlockData;
+import me.cortex.voxy.client.mixin.interfaces.IEbsExtension;
 import me.cortex.voxy.common.world.other.Mapper;
-import net.minecraft.block.BlockState;
-import net.minecraft.registry.entry.RegistryEntry;
-import net.minecraft.world.biome.Biome;
-import net.minecraft.world.chunk.PalettedContainer;
-import net.minecraft.world.chunk.ReadableContainer;
+import me.cortex.voxy.common.world.other.Mipper;
+import net.minecraft.block.Block;
+import net.minecraft.block.material.Material;
+import net.minecraft.world.World;
+import net.minecraft.world.chunk.storage.ExtendedBlockStorage;
 
 public class WorldConversionFactory {
-    private static final ThreadLocal<Reference2IntOpenHashMap<BlockState>> BLOCK_CACHE = ThreadLocal.withInitial(Reference2IntOpenHashMap::new);
+    private static final ThreadLocal<Reference2IntOpenHashMap<Block>> BLOCK_CACHE = ThreadLocal.withInitial(Reference2IntOpenHashMap::new);
 
     //TODO: add a local mapper cache since it should be smaller and faster
     public static VoxelizedSection convert(Mapper stateMapper,
-                                           PalettedContainer<BlockState> blockContainer,
-                                           ReadableContainer<RegistryEntry<Biome>> biomeContainer,
+                                           SectionBlockData blockData,
+                                           ChunkBiomes biomes,
                                            ILightingSupplier lightSupplier,
                                            int sx,
                                            int sy,
@@ -26,12 +28,13 @@ public class WorldConversionFactory {
         var data = section.section;
 
         int blockId = -1;
-        BlockState block = null;
+        Block block = null;
 
         for (int oy = 0; oy < 4; oy++) {
             for (int oz = 0; oz < 4; oz++) {
                 for (int ox = 0; ox < 4; ox++) {
-                    int biomeId = stateMapper.getIdForBiome(biomeContainer.get(ox, oy, oz));
+
+                    int biomeId = biomes.getBiomeId(ox * 4, oz * 4);
 
                     for (int iy = 0; iy < 4; iy++) {
                         for (int iz = 0; iz < 4; iz++) {
@@ -39,11 +42,71 @@ public class WorldConversionFactory {
                                 int x = (ox<<2)|ix;
                                 int y = (oy<<2)|iy;
                                 int z = (oz<<2)|iz;
-                                var state = blockContainer.get(x, y, z);
-                                byte light = lightSupplier.supply(x,y,z,state);
-                                if (!(state.isAir() && (light==0))) {
+                                short blockIdd = blockData.getBlockId(x, y, z);
+                                short meta = blockData.getMeta(x, y, z);
+                                byte light = lightSupplier.supply(x,y,z, state);
+
+                                boolean stateIsAir = Block.getBlockById(blockIdd).getMaterial() == Material.air;
+
+                                if (!(stateIsAir && (light==0))) {
                                     if (block != state) {
-                                        if (state.isAir()) {
+                                        if (stateIsAir) {
+                                            block = state;
+                                            blockId = 0;
+                                        } else {
+                                            blockId = blockCache.computeIfAbsent(state, stateMapper::getIdForBlockState);
+                                            block = state;
+                                        }
+                                    }
+                                    data[G(x, y, z)] = Mapper.composeMappingId(light, blockId, biomeId);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        return section;
+    }
+
+    public static VoxelizedSection convert(Mapper stateMapper,
+                                           ExtendedBlockStorage blockData,
+                                           ChunkBiomes biomes,
+                                           ILightingSupplier lightSupplier,
+                                           int sx,
+                                           int sy,
+                                           int sz) {
+        var blockCache = BLOCK_CACHE.get();
+
+        var section = VoxelizedSection.createEmpty(sx, sy, sz);
+        var data = section.section;
+
+        IEbsExtension sectionData = (IEbsExtension) blockData;
+
+        int blockId = -1;
+        Block block = null;
+
+        for (int oy = 0; oy < 4; oy++) {
+            for (int oz = 0; oz < 4; oz++) {
+                for (int ox = 0; ox < 4; ox++) {
+
+                    int biomeId = biomes.getBiomeId(ox * 4, oz * 4);
+
+                    for (int iy = 0; iy < 4; iy++) {
+                        for (int iz = 0; iz < 4; iz++) {
+                            for (int ix = 0; ix < 4; ix++) {
+                                int x = (ox<<2)|ix;
+                                int y = (oy<<2)|iy;
+                                int z = (oz<<2)|iz;
+                                short blockIdd = (short) sectionData.getBlockId(x, y, z);
+                                short meta = (short) blockData.getExtBlockMetadata(x, y, z);
+                                byte light = lightSupplier.supply(x,y,z, state);
+
+                                boolean stateIsAir = Block.getBlockById(blockIdd).getMaterial() == Material.air;
+
+                                if (!(stateIsAir && (light==0))) {
+                                    if (block != state) {
+                                        if (stateIsAir) {
                                             block = state;
                                             blockId = 0;
                                         } else {

@@ -1,12 +1,16 @@
 package me.cortex.voxy.client;
 
+import com.google.common.base.Supplier;
+import com.google.common.base.Suppliers;
 import com.gtnewhorizons.angelica.proxy.CommonProxy;
 import com.myname.mymodid.Tags;
+import cpw.mods.fml.common.Loader;
 import cpw.mods.fml.common.Mod;
 import cpw.mods.fml.common.SidedProxy;
 import cpw.mods.fml.common.event.FMLInitializationEvent;
 import cpw.mods.fml.common.event.FMLPostInitializationEvent;
 import cpw.mods.fml.common.event.FMLPreInitializationEvent;
+import cpw.mods.fml.common.network.handshake.FMLHandshakeMessage;
 import me.cortex.voxy.client.core.VoxelCore;
 import me.cortex.voxy.client.saver.ContextSelectionSystem;
 import me.cortex.voxy.common.config.Serialization;
@@ -23,6 +27,10 @@ import net.minecraft.client.multiplayer.WorldClient;
 public class Voxy {
     public static final String VERSION = Tags.VERSION;
 
+    public static final Supplier<Boolean> NEIDS_PRESENT = Suppliers.memoize(
+        () -> Loader.isModLoaded("NotEnoughIds")
+    );
+
     @SidedProxy(clientSide = "me.cortex.voxy.proxy.ClientProxy", serverSide = "me.cortex.voxy.proxy.CommonProxy")
     public static CommonProxy proxy;
 
@@ -33,6 +41,7 @@ public class Voxy {
 
     @Mod.EventHandler
     public void init(FMLInitializationEvent event) {
+
         Serialization.init();
         proxy.init(event);
     }

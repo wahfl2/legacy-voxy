@@ -1,5 +1,10 @@
 package me.cortex.voxy.client.core.model;
 
+import com.gtnewhorizons.angelica.compat.mojang.Axis;
+import com.gtnewhorizons.angelica.compat.toremove.MatrixStack;
+import com.gtnewhorizons.angelica.compat.toremove.RenderLayer;
+import com.gtnewhorizons.angelica.glsm.GLStateManager;
+import com.gtnewhorizons.angelica.glsm.TessellatorManager;
 import com.mojang.blaze3d.platform.GlConst;
 import com.mojang.blaze3d.platform.GlStateManager;
 import com.mojang.blaze3d.systems.RenderSystem;
@@ -15,8 +20,10 @@ import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gl.GlUniform;
 import net.minecraft.client.render.*;
 import net.minecraft.client.render.model.BakedModel;
+import net.minecraft.client.renderer.Tessellator;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.fluid.FluidState;
+import net.minecraft.util.Direction;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
@@ -26,6 +33,7 @@ import net.minecraft.world.BlockRenderView;
 import net.minecraft.world.LightType;
 import net.minecraft.world.biome.ColorResolver;
 import net.minecraft.world.chunk.light.LightingProvider;
+import net.minecraftforge.common.util.ForgeDirection;
 import org.jetbrains.annotations.Nullable;
 import org.joml.Matrix4f;
 import org.lwjgl.opengl.GL11C;
@@ -154,7 +162,7 @@ public class ModelTextureBakery {
 
 
         //TODO: Find a better solution
-        if (renderLayer == RenderLayer.getTranslucent()) {
+        if (renderLayer == RenderLayer.translucent()) {
             //Very hacky blend function to retain the effect of the applied alpha since we dont really want to apply alpha
             // this is because we apply the alpha again when rendering the terrain meaning the alpha is being double applied
             glBlendFuncSeparate(GL_ONE_MINUS_DST_ALPHA, GL_DST_ALPHA, GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
@@ -186,7 +194,7 @@ public class ModelTextureBakery {
 
         RenderSystem.setProjectionMatrix(oldProjection, VertexSorter.BY_DISTANCE);
         glBindFramebuffer(GL_FRAMEBUFFER, oldFB);
-        GL11C.glViewport(GlStateManager.Viewport.getX(), GlStateManager.Viewport.getY(), GlStateManager.Viewport.getWidth(), GlStateManager.Viewport.getHeight());
+        GL11C.glViewport(GlStateManager.Viewport.getX(), GLStateManager.Viewport.getY(), GlStateManager.Viewport.getWidth(), GlStateManager.Viewport.getHeight());
 
         //TODO: FIXME: fully revert the state of opengl
 
@@ -196,7 +204,7 @@ public class ModelTextureBakery {
 
 
     private ColourDepthTextureData captureView(BlockState state, BakedModel model, BakedBlockEntityModel blockEntityModel, MatrixStack stack, long randomValue, int face, boolean renderFluid, int textureId) {
-        var vc = Tessellator.getInstance().getBuffer();
+        var tesselator = TessellatorManager.get();
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
         float[] mat = new float[4*4];
@@ -208,9 +216,13 @@ public class ModelTextureBakery {
             blockEntityModel.renderOut();
         }
 
-        vc.begin(VertexFormat.DrawMode.QUADS, VertexFormats.POSITION_COLOR_TEXTURE);
+
+
+        // vc.begin(VertexFormat.DrawMode.QUADS, VertexFormats.POSITION_COLOR_TEXTURE);
+        tesselator.startDrawingQuads();
+
         if (!renderFluid) {
-            renderQuads(vc, state, model, new MatrixStack(), randomValue);
+            renderQuads(tesselator, state, model, new MatrixStack(), randomValue);
         } else {
             MinecraftClient.getInstance().getBlockRenderManager().renderFluid(BlockPos.ORIGIN, new BlockRenderView() {
                 @Override
@@ -292,8 +304,8 @@ public class ModelTextureBakery {
         return new ColourDepthTextureData(colourData, depthData, this.width, this.height);
     }
 
-    private static void renderQuads(BufferBuilder builder, BlockState state, BakedModel model, MatrixStack stack, long randomValue) {
-        for (Direction direction : new Direction[]{Direction.DOWN, Direction.UP, Direction.NORTH, Direction.SOUTH, Direction.WEST, Direction.EAST, null}) {
+    private static void renderQuads(Tessellator tessellator, BlockState state, BakedModel model, MatrixStack stack, long randomValue) {
+        for (ForgeDirection direction : new ForgeDirection[]{ForgeDirection.DOWN, ForgeDirection.UP, ForgeDirection.NORTH, ForgeDirection.SOUTH, ForgeDirection.WEST, ForgeDirection.EAST, null}) {
             var quads = model.getQuads(state, direction, new LocalRandom(randomValue));
             for (var quad : quads) {
                 //TODO: mark pixels that have
