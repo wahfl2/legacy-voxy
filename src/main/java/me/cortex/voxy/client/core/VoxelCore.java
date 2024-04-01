@@ -25,6 +25,7 @@ import net.minecraft.registry.RegistryKeys;
 import net.minecraft.text.Text;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.world.World;
+import net.minecraft.world.chunk.Chunk;
 import net.minecraft.world.chunk.WorldChunk;
 import org.joml.Matrix4f;
 import org.lwjgl.opengl.GL11;
@@ -69,24 +70,24 @@ public class VoxelCore {
 
         //Trigger the shared index buffer loading
         SharedIndexBuffer.INSTANCE.id();
-        if (VoxyConfig.CONFIG.useMeshShaders()) {
-            this.renderer = new NvMeshFarWorldRenderer(VoxyConfig.CONFIG.geometryBufferSize, VoxyConfig.CONFIG.maxSections);
+        if (VoxyConfig.useMeshShaders()) {
+            this.renderer = new NvMeshFarWorldRenderer(VoxyConfig.geometryBufferSize, VoxyConfig.maxSections);
             System.out.println("Using NvMeshFarWorldRenderer");
         } else {
-            this.renderer = new Gl46FarWorldRenderer(VoxyConfig.CONFIG.geometryBufferSize, VoxyConfig.CONFIG.maxSections);
+            this.renderer = new Gl46FarWorldRenderer(VoxyConfig.geometryBufferSize, VoxyConfig.maxSections);
             System.out.println("Using Gl46FarWorldRenderer");
         }
         this.viewportSelector = new ViewportSelector<>(this.renderer::createViewport);
         System.out.println("Renderer initialized");
 
         this.renderTracker = new RenderTracker(this.world, this.renderer);
-        this.renderGen = new RenderGenerationService(this.world, this.renderer.getModelManager(), VoxyConfig.CONFIG.renderThreads, this.renderTracker::processBuildResult);
+        this.renderGen = new RenderGenerationService(this.world, this.renderer.getModelManager(), VoxyConfig.renderThreads, this.renderTracker::processBuildResult);
         this.world.setDirtyCallback(this.renderTracker::sectionUpdated);
         this.renderTracker.setRenderGen(this.renderGen);
         System.out.println("Render tracker and generator initialized");
 
         //To get to chunk scale multiply the scale by 2, the scale is after how many chunks does the lods halve
-        int q = VoxyConfig.CONFIG.qualityScale;
+        int q = VoxyConfig.qualityScale;
         int minY = MinecraftClient.getInstance().world.getBottomSectionCoord()/2;
         int maxY = MinecraftClient.getInstance().world.getTopSectionCoord()/2;
 
@@ -99,7 +100,7 @@ public class VoxelCore {
         }
 
         this.distanceTracker = new DistanceTracker(this.renderTracker, new int[]{q,q,q,q},
-                (VoxyConfig.CONFIG.renderDistance<0?VoxyConfig.CONFIG.renderDistance:((VoxyConfig.CONFIG.renderDistance+1)/2)),
+                (VoxyConfig.renderDistance<0?VoxyConfig.renderDistance:((VoxyConfig.renderDistance+1)/2)),
                 3, minY, maxY);
         System.out.println("Distance tracker initialized");
 
@@ -128,7 +129,7 @@ public class VoxelCore {
 
 
 
-    public void enqueueIngest(WorldChunk worldChunk) {
+    public void enqueueIngest(Chunk worldChunk) {
         this.world.ingestService.enqueueIngest(worldChunk);
     }
 

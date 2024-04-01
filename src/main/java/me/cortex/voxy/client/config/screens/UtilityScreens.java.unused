@@ -1,6 +1,5 @@
 package me.cortex.voxy.client.config.screens;
 
-import me.cortex.voxy.client.config.BlockConfig;
 import me.shedaniel.clothconfig2.api.AbstractConfigEntry;
 import me.shedaniel.clothconfig2.api.AbstractConfigListEntry;
 import me.shedaniel.clothconfig2.api.ConfigEntryBuilder;

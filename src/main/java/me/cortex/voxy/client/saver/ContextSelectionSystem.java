@@ -80,7 +80,7 @@ public class ContextSelectionSystem {
         }
 
         public WorldEngine createEngine() {
-            return new WorldEngine(this.createStorageBackend(), VoxyConfig.CONFIG.ingestThreads, VoxyConfig.CONFIG.savingThreads, 5);
+            return new WorldEngine(this.createStorageBackend(), VoxyConfig.ingestThreads, VoxyConfig.savingThreads, 5);
         }
 
         //Saves the config for the world selection or something, need to figure out how to make it work with dimensional configs maybe?

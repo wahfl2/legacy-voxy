@@ -1,7 +1,6 @@
 package me.cortex.voxy.client.config;
 
 import net.minecraft.block.Block;
-import net.minecraft.block.Blocks;
 
 public class BlockConfig {
     public Block block = Blocks.AIR;

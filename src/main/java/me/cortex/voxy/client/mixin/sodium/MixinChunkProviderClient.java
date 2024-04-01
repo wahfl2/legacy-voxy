@@ -19,7 +19,7 @@ public class MixinChunkProviderClient {
     @Inject(method="unloadChunk", at=@At("TAIL"))
     private void injectIngest(int x, int z, CallbackInfo ci) {
         var core = ((IGetVoxelCore)(world.mc.renderGlobal)).getVoxelCore();
-        if (core != null && VoxyConfig.CONFIG.ingestEnabled) {
+        if (core != null && VoxyConfig.ingestEnabled) {
             core.enqueueIngest(world.getChunkProvider().provideChunk(x, z));
         }
     }

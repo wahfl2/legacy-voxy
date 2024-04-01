@@ -149,8 +149,8 @@ public class Mapper {
 
     }
 
-    private synchronized StateEntry registerNewBlockState(Block state) {
-        StateEntry entry = new StateEntry(this.blockId2stateEntry.size(), state);
+    private synchronized StateEntry registerNewBlockState(short blockId, short meta) {
+        StateEntry entry = new StateEntry(this.blockId2stateEntry.size(), blockId, meta);
         //this.block2stateEntry.put(state, entry);
         this.blockId2stateEntry.add(entry);
 
@@ -165,8 +165,8 @@ public class Mapper {
         return entry;
     }
 
-    private synchronized BiomeEntry registerNewBiome(String biome) {
-        BiomeEntry entry = new BiomeEntry(this.biome2biomeEntry.size(), biome);
+    private synchronized BiomeEntry registerNewBiome(int biomeId) {
+        BiomeEntry entry = new BiomeEntry(this.biome2biomeEntry.size(), biomeId);
         //this.biome2biomeEntry.put(biome, entry);
         this.biomeId2biomeEntry.add(entry);
 
@@ -188,12 +188,15 @@ public class Mapper {
 //        return composeMappingId(light, this.getIdForBlockState(state), this.getIdForBiome(biome));
 //    }
 
-    public Block getBlockStateFromBlockId(int blockId) {
-        return this.blockId2stateEntry.get(blockId).state;
+    public short getBlockStateFromBlockId(int blockId) {
+        return this.blockId2stateEntry.get(blockId).blockId;
     }
 
-    public int getIdForBlockState(Block state) {
-        return this.block2stateEntry.computeIfAbsent(state, this::registerNewBlockState).id;
+    public int getIdForBlockState(short blockId, short meta) {
+        return this.block2stateEntry.computeIfAbsent(
+            compactIdMeta(blockId, meta),
+            compact -> this.registerNewBlockState(blockId, meta)
+        ).id;
     }
 
     public int getIdForBiome(BiomeManager.BiomeEntry biome) {
@@ -243,7 +246,7 @@ public class Mapper {
 
 
         for (var entry : blocks) {
-            if (entry.state.getMaterial() == Material.air && entry.id == 0) {
+            if (entry.id == 0) {
                 continue;
             }
             if (this.blockId2stateEntry.indexOf(entry) != entry.id) {
@@ -273,75 +276,70 @@ public class Mapper {
         this.storage.flush();
     }
 
+    private int compactIdMeta(short id, short meta) {
+        return id << 16 | meta;
+    }
 
     public static final class StateEntry {
         public final int id;
-        public final Block state;
-        public StateEntry(int id, Block state) {
+        public final short blockId;
+        public final short meta;
+
+        public StateEntry(int id, short blockId, short meta) {
             this.id = id;
-            this.state = state;
+            this.blockId = blockId;
+            this.meta = meta;
         }
 
         public byte[] serialize() {
-            try {
-                var serialized = new NBTTagCompound();
-                serialized.setInteger("id", this.id);
-                serialized.setTag("block_state", Block.CODEC.encodeStart(NbtOps.INSTANCE, this.state).result().get());
-                var out = new ByteArrayOutputStream();
-                CompressedStreamTools.writeCompressed(serialized, out);
-                return out.toByteArray();
-            } catch (Exception e) {
-                throw new RuntimeException(e);
-            }
+            var out = new ByteArrayOutputStream();
+
+            out.write(id);
+            out.write(blockId << 16 | meta);
+
+            return out.toByteArray();
         }
 
         public static StateEntry deserialize(int id, byte[] data) {
-            try {
-                var compound = CompressedStreamTools.readCompressed(new ByteArrayInputStream(data));
-                if (compound.getInteger("id") != id) {
-                    throw new IllegalStateException("Encoded id != expected id");
-                }
-                Block state = Block.CODEC.parse(NbtOps.INSTANCE, compound.getCompoundTag("block_state")).get().orThrow();
-                return new StateEntry(id, state);
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
+            var bb = ByteBuffer.wrap(data);
+
+            int rId = bb.getInt();
+            short blockId = bb.getShort();
+            short meta = bb.getShort();
+
+            if (rId != id) throw new IllegalStateException("Encoded id != expected id");
+
+            return new StateEntry(rId, blockId, meta);
         }
     }
 
     public static final class BiomeEntry {
         public final int id;
-        public final String biome;
+        public final int biomeId;
 
-        public BiomeEntry(int id, String biome) {
+        public BiomeEntry(int id, int biomeId) {
             this.id = id;
-            this.biome = biome;
+            this.biomeId = biomeId;
         }
 
         public byte[] serialize() {
-            try {
-                var serialized = new NBTTagCompound();
-                serialized.setInteger("id", this.id);
-                serialized.setString("biome_id", this.biome);
-                var out = new ByteArrayOutputStream();
-                CompressedStreamTools.writeCompressed(serialized, out);
-                return out.toByteArray();
-            } catch (Exception e) {
-                throw new RuntimeException(e);
-            }
+            var out = new ByteArrayOutputStream();
+
+            out.write(id);
+            out.write(biomeId);
+
+            return out.toByteArray();
         }
 
         public static BiomeEntry deserialize(int id, byte[] data) {
-            try {
-                var compound = CompressedStreamTools.readCompressed(new ByteArrayInputStream(data));
-                if (compound.getInteger("id") != id) {
-                    throw new IllegalStateException("Encoded id != expected id");
-                }
-                String biome = compound.getString("biome_id");
-                return new BiomeEntry(id, biome);
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
+            var bb = ByteBuffer.wrap(data);
+
+            int rId = bb.getInt();
+            int biomeId = bb.getInt();
+
+            if (rId != id) throw new IllegalStateException("Encoded id != expected id");
+
+            return new BiomeEntry(rId, biomeId);
         }
     }
 }

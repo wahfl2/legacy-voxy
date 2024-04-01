@@ -245,7 +245,7 @@ public class RenderDataFactory {
         }
 
         if (facingFluidClientId != -1) {
-            if (this.world.getMapper().getBlockStateFromBlockId(selfBlockId).getBlock() == this.world.getMapper().getBlockStateFromBlockId(Mapper.getBlockId(facingState)).getBlock()) {
+            if (this.world.getMapper().getBlockStateFromBlockId(selfBlockId) == this.world.getMapper().getBlockStateFromBlockId(Mapper.getBlockId(facingState))) {
                return false;
             }
         }

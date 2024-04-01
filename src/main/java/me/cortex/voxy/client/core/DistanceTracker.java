@@ -6,7 +6,6 @@ package me.cortex.voxy.client.core;
 import it.unimi.dsi.fastutil.longs.Long2IntOpenHashMap;
 import me.cortex.voxy.client.core.rendering.RenderTracker;
 import me.cortex.voxy.client.core.util.RingUtil;
-import net.minecraft.client.MinecraftClient;
 
 //Can use ring logic
 // i.e. when a player moves the rings of each lod change (how it was doing in the original attempt)
