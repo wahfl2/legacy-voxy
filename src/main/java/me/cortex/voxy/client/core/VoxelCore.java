@@ -1,32 +1,18 @@
 package me.cortex.voxy.client.core;
 
 import com.gtnewhorizons.angelica.compat.mojang.Camera;
-import com.mojang.blaze3d.platform.GlStateManager;
-import com.mojang.blaze3d.systems.RenderSystem;
+import com.gtnewhorizons.angelica.compat.toremove.MatrixStack;
 import me.cortex.voxy.client.Voxy;
 import me.cortex.voxy.client.config.VoxyConfig;
 import me.cortex.voxy.client.core.rendering.*;
 import me.cortex.voxy.client.core.rendering.building.RenderGenerationService;
 import me.cortex.voxy.client.core.rendering.post.PostProcessing;
-import me.cortex.voxy.client.core.util.DebugUtil;
 import me.cortex.voxy.client.core.util.IrisUtil;
 import me.cortex.voxy.client.saver.ContextSelectionSystem;
 import me.cortex.voxy.common.world.WorldEngine;
 import me.cortex.voxy.client.importers.WorldImporter;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gui.hud.BossBarHud;
-import net.minecraft.client.gui.hud.ClientBossBar;
-import net.minecraft.client.render.Camera;
-import net.minecraft.client.render.Frustum;
-import net.minecraft.client.util.math.MatrixStack;
-import net.minecraft.entity.boss.BossBar;
-import net.minecraft.entity.boss.ServerBossBar;
-import net.minecraft.registry.RegistryKeys;
-import net.minecraft.text.Text;
-import net.minecraft.util.math.MathHelper;
 import net.minecraft.world.World;
 import net.minecraft.world.chunk.Chunk;
-import net.minecraft.world.chunk.WorldChunk;
 import org.joml.Matrix4f;
 import org.lwjgl.opengl.GL11;
 
@@ -34,7 +20,6 @@ import java.io.File;
 import java.util.*;
 
 import static org.lwjgl.opengl.GL30C.GL_DRAW_FRAMEBUFFER_BINDING;
-import static org.lwjgl.opengl.GL30C.GL_FRAMEBUFFER;
 
 //Core class that ingests new data from sources and updates the required systems
 
@@ -169,10 +154,6 @@ public class VoxelCore {
         if (IrisUtil.irisShadowActive()) {
             return;
         }
-        matrices.push();
-        matrices.translate(-cameraX, -cameraY, -cameraZ);
-        DebugUtil.setPositionMatrix(matrices);
-        matrices.pop();
         //this.renderer.getModelManager().updateEntry(0, Blocks.DIRT_PATH.getDefaultState());
 
         //this.renderer.getModelManager().updateEntry(0, Blocks.COMPARATOR.getDefaultState());
@@ -184,7 +165,7 @@ public class VoxelCore {
         var projection = computeProjectionMat();
         //var projection = RenderSystem.getProjectionMatrix();//computeProjectionMat();
         var viewport = this.viewportSelector.getViewport();
-        viewport.setProjection(projection).setModelView(matrices.peek().getPositionMatrix()).setCamera(cameraX, cameraY, cameraZ);
+        viewport.setProjection(projection).setModelView(matrices.peek().getModel()).setCamera(cameraX, cameraY, cameraZ);
 
         int boundFB = GL11.glGetInteger(GL_DRAW_FRAMEBUFFER_BINDING);
         this.postProcessing.setup(MinecraftClient.getInstance().getFramebuffer().textureWidth, MinecraftClient.getInstance().getFramebuffer().textureHeight, boundFB);

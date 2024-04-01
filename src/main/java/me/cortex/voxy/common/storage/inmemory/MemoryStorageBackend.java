@@ -8,11 +8,10 @@ import it.unimi.dsi.fastutil.objects.ObjectCollection;
 import me.cortex.voxy.common.storage.StorageBackend;
 import me.cortex.voxy.common.storage.config.ConfigBuildCtx;
 import me.cortex.voxy.common.storage.config.StorageConfig;
-import net.minecraft.util.math.random.RandomSeed;
-import org.apache.commons.lang3.stream.Streams;
 import org.lwjgl.system.MemoryUtil;
 
 import java.nio.ByteBuffer;
+import java.util.stream.Stream;
 
 public class MemoryStorageBackend extends StorageBackend {
     private final Long2ObjectMap<ByteBuffer>[] maps;
@@ -30,7 +29,14 @@ public class MemoryStorageBackend extends StorageBackend {
     }
 
     private Long2ObjectMap<ByteBuffer> getMap(long key) {
-        return this.maps[(int) (RandomSeed.mixStafford13(RandomSeed.mixStafford13(key)^key)&(this.maps.length-1))];
+
+        key = key*1238197241+1293819;
+        key ^= key>>21;
+        key = key*1238197241+1293819;
+        key ^= key>>21;
+        key = key*1238197241+1293819;
+
+        return this.maps[(int) (key&(this.maps.length-1))];
     }
 
     @Override
@@ -103,7 +109,7 @@ public class MemoryStorageBackend extends StorageBackend {
 
     @Override
     public void close() {
-        Streams.of(this.maps).map(Long2ObjectMap::values).flatMap(ObjectCollection::stream).forEach(MemoryUtil::memFree);
+        Stream.of(this.maps).map(Long2ObjectMap::values).flatMap(ObjectCollection::stream).forEach(MemoryUtil::memFree);
         this.idMappings.values().forEach(MemoryUtil::memFree);
     }
 

@@ -1,11 +1,11 @@
 package me.cortex.voxy.client.core.rendering.post;
 
+import com.gtnewhorizons.angelica.compat.toremove.MatrixStack;
 import me.cortex.voxy.client.core.gl.GlFramebuffer;
 import me.cortex.voxy.client.core.gl.GlTexture;
 import me.cortex.voxy.client.core.gl.shader.Shader;
 import me.cortex.voxy.client.core.gl.shader.ShaderType;
 import me.cortex.voxy.client.core.rendering.util.GlStateCapture;
-import net.minecraft.client.util.math.MatrixStack;
 import org.joml.Matrix4f;
 import org.lwjgl.opengl.GL11C;
 
@@ -139,7 +139,7 @@ public class PostProcessing {
 
         this.ssaoComp.bind();
         float[] data = new float[4*4];
-        var mat = new Matrix4f(projection).mul(stack.peek().getPositionMatrix());
+        var mat = new Matrix4f(projection).mul(stack.peek().getModel());
         mat.get(data);
         glUniformMatrix4fv(3, false, data);//MVP
         mat.invert();

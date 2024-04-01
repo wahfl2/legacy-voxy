@@ -4,7 +4,6 @@ import com.google.gson.*;
 import com.google.gson.reflect.TypeToken;
 import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonWriter;
-import net.fabricmc.loader.api.FabricLoader;
 
 import java.io.BufferedReader;
 import java.io.IOException;
