@@ -1,12 +1,9 @@
 package me.cortex.voxy.client.core.rendering;
 
+import com.gtnewhorizons.angelica.compat.toremove.RenderLayer;
 import me.cortex.voxy.client.core.gl.shader.Shader;
 import me.cortex.voxy.client.core.gl.shader.ShaderType;
 import me.cortex.voxy.client.core.rendering.util.UploadStream;
-import me.cortex.voxy.client.mixin.joml.AccessFrustumIntersection;
-import net.minecraft.client.render.Camera;
-import net.minecraft.client.render.Frustum;
-import net.minecraft.client.render.RenderLayer;
 import org.joml.Matrix4f;
 import org.joml.Vector3f;
 import org.lwjgl.opengl.GL11C;
@@ -111,7 +108,7 @@ public class NvMeshFarWorldRenderer extends AbstractFarWorldRenderer<NvMeshViewp
 
         this.terrain.bind();
 
-        RenderLayer.getCutoutMipped().startDrawing();
+        RenderLayer.cutout().startDrawing();
 
         glBindVertexArray(AbstractFarWorldRenderer.STATIC_VAO);
         this.bindResources(viewport);
@@ -135,7 +132,7 @@ public class NvMeshFarWorldRenderer extends AbstractFarWorldRenderer<NvMeshViewp
         glBindVertexArray(0);
         glBindSampler(0, 0);
         glBindTextureUnit(0, 0);
-        RenderLayer.getCutoutMipped().endDrawing();
+        RenderLayer.cutout().endDrawing();
     }
 
     @Override
@@ -143,7 +140,7 @@ public class NvMeshFarWorldRenderer extends AbstractFarWorldRenderer<NvMeshViewp
         if (this.geometry.getSectionCount()==0) {
             return;
         }
-        RenderLayer.getTranslucent().startDrawing();
+        RenderLayer.translucent().startDrawing();
         glBindVertexArray(AbstractFarWorldRenderer.STATIC_VAO);
         glDisable(GL_CULL_FACE);
         glEnable(GL_BLEND);
@@ -171,7 +168,7 @@ public class NvMeshFarWorldRenderer extends AbstractFarWorldRenderer<NvMeshViewp
         glBindTextureUnit(0, 0);
         glDisable(GL_BLEND);
 
-        RenderLayer.getTranslucent().endDrawing();
+        RenderLayer.translucent().endDrawing();
     }
 
     @Override

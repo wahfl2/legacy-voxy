@@ -3,6 +3,7 @@ package me.cortex.voxy.client.mixin.sodium;
 import me.cortex.voxy.client.config.VoxyConfig;
 import me.cortex.voxy.client.core.IGetVoxelCore;
 import me.jellysquid.mods.sodium.client.render.chunk.ChunkRenderManager;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.WorldClient;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
@@ -18,7 +19,7 @@ public class MixinChunkProviderClient {
 
     @Inject(method="unloadChunk", at=@At("TAIL"))
     private void injectIngest(int x, int z, CallbackInfo ci) {
-        var core = ((IGetVoxelCore)(world.mc.renderGlobal)).getVoxelCore();
+        var core = ((IGetVoxelCore)Minecraft.getMinecraft().renderGlobal).getVoxelCore();
         if (core != null && VoxyConfig.ingestEnabled) {
             core.enqueueIngest(world.getChunkProvider().provideChunk(x, z));
         }

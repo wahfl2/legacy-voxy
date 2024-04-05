@@ -8,8 +8,8 @@ import me.cortex.voxy.client.core.gl.GlBuffer;
 import me.cortex.voxy.client.core.rendering.building.BuiltSection;
 import me.cortex.voxy.client.core.rendering.util.BufferArena;
 import me.cortex.voxy.client.core.rendering.util.UploadStream;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.text.Text;
+import net.minecraft.client.Minecraft;
+import net.minecraft.util.ChatComponentText;
 import org.lwjgl.system.MemoryUtil;
 
 import java.util.concurrent.ConcurrentLinkedDeque;
@@ -175,7 +175,7 @@ public class GeometryManager {
         int geometryPtr = (int) this.geometryBuffer.upload(geometry.geometryBuffer);
         if (geometryPtr == -1) {
             String msg = "Buffer arena out of memory, please increase it in settings or decrease LoD quality";
-            MinecraftClient.getInstance().inGameHud.getChatHud().addMessage(Text.literal(msg));
+            Minecraft.getMinecraft().ingameGUI.getChatGUI().printChatMessage(new ChatComponentText(msg));
             System.err.println(msg);
             return null;
         }

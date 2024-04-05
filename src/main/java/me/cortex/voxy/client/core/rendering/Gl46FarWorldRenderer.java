@@ -1,13 +1,11 @@
 package me.cortex.voxy.client.core.rendering;
 
+import com.gtnewhorizons.angelica.compat.toremove.RenderLayer;
 import me.cortex.voxy.client.core.gl.GlBuffer;
 import me.cortex.voxy.client.core.gl.shader.Shader;
 import me.cortex.voxy.client.core.gl.shader.ShaderType;
 import me.cortex.voxy.client.core.rendering.util.UploadStream;
 import me.cortex.voxy.client.mixin.joml.AccessFrustumIntersection;
-import net.minecraft.block.Blocks;
-import net.minecraft.client.render.RenderLayer;
-import net.minecraft.client.util.math.MatrixStack;
 import org.joml.Matrix4f;
 import org.joml.Vector3f;
 import org.lwjgl.opengl.GL11C;
@@ -124,7 +122,7 @@ public class Gl46FarWorldRenderer extends AbstractFarWorldRenderer<Gl46Viewport>
         //this.models.bakery.renderFaces(Blocks.CHEST.getDefaultState(), 1234, false);
 
 
-        RenderLayer.getCutoutMipped().startDrawing();
+        RenderLayer.cutout().startDrawing();
         //RenderSystem.enableBlend();
         //RenderSystem.defaultBlendFunc();
 
@@ -178,12 +176,15 @@ public class Gl46FarWorldRenderer extends AbstractFarWorldRenderer<Gl46Viewport>
         glBindVertexArray(0);
         glBindSampler(0, 0);
         glBindTextureUnit(0, 0);
-        RenderLayer.getCutoutMipped().endDrawing();
+        RenderLayer.cutout().endDrawing();
     }
 
     @Override
     public void renderFarAwayTranslucent(Gl46Viewport viewport) {
-        RenderLayer.getTranslucent().startDrawing();
+        if (this.geometry.getSectionCount()==0) {
+            return;
+        }
+        RenderLayer.translucent().startDrawing();
         glBindVertexArray(AbstractFarWorldRenderer.STATIC_VAO);
         glDisable(GL_CULL_FACE);
         glEnable(GL_BLEND);
@@ -212,7 +213,7 @@ public class Gl46FarWorldRenderer extends AbstractFarWorldRenderer<Gl46Viewport>
         glBindTextureUnit(0, 0);
         glDisable(GL_BLEND);
 
-        RenderLayer.getTranslucent().endDrawing();
+        RenderLayer.translucent().endDrawing();
     }
 
     protected Gl46Viewport createViewport0() {

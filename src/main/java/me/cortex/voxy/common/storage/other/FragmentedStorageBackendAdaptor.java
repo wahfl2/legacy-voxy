@@ -6,7 +6,6 @@ import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
 import me.cortex.voxy.common.storage.StorageBackend;
 import me.cortex.voxy.common.storage.config.ConfigBuildCtx;
 import me.cortex.voxy.common.storage.config.StorageConfig;
-import net.minecraft.util.math.random.RandomSeed;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
@@ -26,7 +25,15 @@ public class FragmentedStorageBackendAdaptor extends StorageBackend {
     }
 
     private int getSegmentId(long key) {
-        return (int) (RandomSeed.mixStafford13(RandomSeed.mixStafford13(key)^key)&(this.backends.length-1));
+        key = key*1238197241+1293819;
+        key ^= key>>21;
+        key = key*1238197241+1293819;
+        key ^= key>>21;
+        key = key*1238197241+1293819;
+        key ^= key>>21;
+        key = key*1238197241+1293819;
+        key ^= key>>21;
+        return (int) (key&(this.backends.length-1));
     }
 
     //TODO: reencode the key to be shifted one less OR
