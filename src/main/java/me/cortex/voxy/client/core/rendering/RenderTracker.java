@@ -6,8 +6,6 @@ import me.cortex.voxy.client.core.rendering.building.BuiltSection;
 import me.cortex.voxy.client.core.rendering.building.RenderGenerationService;
 import me.cortex.voxy.common.world.WorldEngine;
 import me.cortex.voxy.common.world.WorldSection;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.util.math.Direction;
 
 import java.util.concurrent.ConcurrentHashMap;
 

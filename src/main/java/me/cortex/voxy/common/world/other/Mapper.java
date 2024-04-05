@@ -1,31 +1,14 @@
 package me.cortex.voxy.common.world.other;
 
 import it.unimi.dsi.fastutil.Pair;
-import it.unimi.dsi.fastutil.bytes.ByteIntImmutablePair;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import it.unimi.dsi.fastutil.objects.ObjectIntImmutablePair;
 import me.cortex.voxy.common.storage.StorageBackend;
 import net.minecraft.block.Block;
-import net.minecraft.block.BlockState;
-import net.minecraft.block.Blocks;
-import net.minecraft.block.material.Material;
-import net.minecraft.nbt.CompressedStreamTools;
-import net.minecraft.nbt.NBTSizeTracker;
-import net.minecraft.nbt.NBTTagCompound;
-import net.minecraft.nbt.NBTUtil;
-import net.minecraft.nbt.NbtCompound;
-import net.minecraft.nbt.NbtIo;
-import net.minecraft.nbt.NbtOps;
-import net.minecraft.nbt.NbtTagSizeTracker;
-import net.minecraft.registry.entry.RegistryEntry;
-import net.minecraft.util.Pair;
-import net.minecraft.world.biome.Biome;
 import net.minecraftforge.common.BiomeManager;
 import org.lwjgl.system.MemoryUtil;
 
-import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
-import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -52,8 +35,8 @@ public class Mapper {
     public Mapper(StorageBackend storage) {
         this.storage = storage;
         //Insert air since its a special entry (index 0)
-        var airEntry = new StateEntry(0, Blocks.AIR.getDefaultState());
-        this.block2stateEntry.put(airEntry.state, airEntry);
+        var airEntry = new StateEntry(0, (short) 0, (short) 0);
+        this.block2stateEntry.put(airEntry.getCompactIdMeta(), airEntry);
         this.blockId2stateEntry.add(airEntry);
 
         this.loadFromStorage();
@@ -97,20 +80,20 @@ public class Mapper {
             int id = entry.getIntKey() & ((1<<30)-1);
             if (entryType == BLOCK_STATE_TYPE) {
                 var sentry = StateEntry.deserialize(id, entry.getValue());
-                if (sentry.state.isAir()) {
+                if (sentry.isAir()) {
                     System.err.println("Deserialization was air, removed block");
                     sentryErrors.add(new ObjectIntImmutablePair<>(entry.getValue(), id));
                     continue;
                 }
                 sentries.add(sentry);
-                var oldEntry = this.block2stateEntry.put(sentry.state, sentry);
+                var oldEntry = this.block2stateEntry.put(sentry.getCompactIdMeta(), sentry);
                 if (oldEntry != null) {
                     throw new IllegalStateException("Multiple mappings for blockstate");
                 }
             } else if (entryType == BIOME_TYPE) {
                 var bentry = BiomeEntry.deserialize(id, entry.getValue());
                 bentries.add(bentry);
-                if (this.biome2biomeEntry.put(bentry.biome, bentry) != null) {
+                if (this.biome2biomeEntry.put(bentry.biomeId, bentry) != null) {
                     throw new IllegalStateException("Multiple mappings for biome entry");
                 }
             } else {
@@ -276,7 +259,7 @@ public class Mapper {
         this.storage.flush();
     }
 
-    private int compactIdMeta(short id, short meta) {
+    private static int compactIdMeta(short id, short meta) {
         return id << 16 | meta;
     }
 
@@ -289,6 +272,14 @@ public class Mapper {
             this.id = id;
             this.blockId = blockId;
             this.meta = meta;
+        }
+
+        public int getCompactIdMeta() {
+            return compactIdMeta(blockId, meta);
+        }
+
+        public boolean isAir() {
+            return blockId == AIR;
         }
 
         public byte[] serialize() {
