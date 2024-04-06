@@ -6,7 +6,6 @@
   "client": [
     "joml.AccessFrustumIntersection",
     "minecraft.MixinRenderGlobal",
-    "sodium.MixinChunkProviderClient",
     "sodium.MixinChunkRenderManager",
     "minecraft.MixinEbsNeids",
     "minecraft.MixinExtendedBlockStorage"
