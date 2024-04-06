@@ -7,7 +7,7 @@
     "joml.AccessFrustumIntersection",
     "minecraft.MixinRenderGlobal",
     "sodium.MixinChunkProviderClient",
-    "sodium.MixinDefaultChunkRenderer",
+    "sodium.MixinChunkRenderManager",
     "minecraft.MixinEbsNeids",
     "minecraft.MixinExtendedBlockStorage"
   ],
