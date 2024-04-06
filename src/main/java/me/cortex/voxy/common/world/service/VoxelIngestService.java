@@ -4,17 +4,11 @@ import com.gtnewhorizons.angelica.compat.mojang.ChunkSectionPos;
 import com.gtnewhorizons.neid.mixins.interfaces.IExtendedBlockStorageMixin;
 import it.unimi.dsi.fastutil.Pair;
 import me.cortex.voxy.client.importers.util.ChunkBiomes;
-import me.cortex.voxy.client.importers.util.SectionBlockData;
 import me.cortex.voxy.common.voxelization.VoxelizedSection;
 import me.cortex.voxy.common.voxelization.WorldConversionFactory;
 import me.cortex.voxy.common.world.WorldEngine;
-import net.minecraft.util.math.ChunkSectionPos;
-import net.minecraft.world.LightType;
 import net.minecraft.world.chunk.Chunk;
-import net.minecraft.world.chunk.ChunkNibbleArray;
 import net.minecraft.world.chunk.NibbleArray;
-import net.minecraft.world.chunk.WorldChunk;
-import net.minecraft.world.chunk.light.LightStorage;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
