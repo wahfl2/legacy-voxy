@@ -95,33 +95,36 @@ public class VoxelIngestService {
     }
 
     private static void fetchLightingData(Map<Long, Pair<NibbleArray, NibbleArray>> out, Chunk chunk) {
-        var lightingProvider = chunk.getWorld().getLightingProvider();
-        var blp = lightingProvider.get(LightType.BLOCK);
-        var slp = lightingProvider.get(LightType.SKY);
+//        var lightingProvider = chunk.getWorld().getLightingProvider();
+//        var blp = lightingProvider.get(LightType.BLOCK);
+//        var slp = lightingProvider.get(LightType.SKY);
 
-        int i = chunk.getBottomSectionCoord() - 1;
-        for (var section : chunk.getSectionArray()) {
+        int i = -1;
+        for (var section : chunk.getBlockStorageArray()) {
             i++;
             if (section == null) continue;
             if (section.isEmpty()) continue;
-            var pos = ChunkSectionPos.from(chunk.getPos(), i);
-            var bl = blp.getLightSection(pos);
-            if (!(bl == null || bl.isUninitialized())) {
-                bl = bl.copy();
-            } else {
-                bl = null;
+
+            var pos = ChunkSectionPos.from(chunk.xPosition, i, chunk.zPosition);
+            var bl = section.getBlocklightArray();
+            if (bl != null) {
+                bl = copyNibbleArray(bl);
             }
-            var sl = slp.getLightSection(pos);
-            if (!(sl == null || sl.isUninitialized())) {
-                sl = sl.copy();
-            } else {
-                sl = null;
+
+            var sl = section.getSkylightArray();
+            if (sl != null) {
+                sl = copyNibbleArray(sl);
             }
+
             if (bl == null && sl == null) {
                 continue;
             }
             out.put(pos.asLong(), Pair.of(bl, sl));
         }
+    }
+
+    private static NibbleArray copyNibbleArray(NibbleArray nibbleArray) {
+        return new NibbleArray(nibbleArray.data.clone(), 4);
     }
 
     public void enqueueIngest(Chunk chunk) {
