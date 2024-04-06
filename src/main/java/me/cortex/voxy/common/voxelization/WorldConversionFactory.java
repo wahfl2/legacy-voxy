@@ -1,24 +1,18 @@
 package me.cortex.voxy.common.voxelization;
 
-import it.unimi.dsi.fastutil.objects.Reference2IntOpenHashMap;
+import it.unimi.dsi.fastutil.ints.Int2IntOpenHashMap;
 import me.cortex.voxy.client.importers.util.ChunkBiomes;
-import me.cortex.voxy.client.importers.util.SectionBlockData;
-import me.cortex.voxy.client.mixin.interfaces.IEbsExtension;
+import me.cortex.voxy.common.util.Util;
 import me.cortex.voxy.common.world.other.Mapper;
 import me.cortex.voxy.common.world.other.Mipper;
-import net.minecraft.block.Block;
-import net.minecraft.block.material.Material;
-import net.minecraft.world.World;
-import net.minecraft.world.chunk.storage.ExtendedBlockStorage;
 
 public class WorldConversionFactory {
-    private static final ThreadLocal<Reference2IntOpenHashMap<Block>> BLOCK_CACHE = ThreadLocal.withInitial(Reference2IntOpenHashMap::new);
+    private static final ThreadLocal<Int2IntOpenHashMap> BLOCK_CACHE = ThreadLocal.withInitial(Int2IntOpenHashMap::new);
 
     //TODO: add a local mapper cache since it should be smaller and faster
     public static VoxelizedSection convert(Mapper stateMapper,
-                                           SectionBlockData blockData,
+                                           ISectionDataProvider sectionData,
                                            ChunkBiomes biomes,
-                                           ILightingSupplier lightSupplier,
                                            int sx,
                                            int sy,
                                            int sz) {
@@ -27,8 +21,8 @@ public class WorldConversionFactory {
         var section = VoxelizedSection.createEmpty(sx, sy, sz);
         var data = section.section;
 
-        int blockId = -1;
-        Block block = null;
+        int blockIdP = -1;
+        int blockP = -1;
 
         for (int oy = 0; oy < 4; oy++) {
             for (int oz = 0; oz < 4; oz++) {
@@ -42,80 +36,33 @@ public class WorldConversionFactory {
                                 int x = (ox<<2)|ix;
                                 int y = (oy<<2)|iy;
                                 int z = (oz<<2)|iz;
-                                short blockIdd = blockData.getBlockId(x, y, z);
-                                short meta = blockData.getMeta(x, y, z);
-                                byte light = lightSupplier.supply(x,y,z, state);
 
-                                boolean stateIsAir = Block.getBlockById(blockIdd).getMaterial() == Material.air;
+                                short blockId = sectionData.getBlockId(x, y, z);
+                                short meta = sectionData.getMeta(x, y, z);
+                                int block = Util.compactIdMeta(blockId, meta);
 
-                                if (!(stateIsAir && (light==0))) {
-                                    if (block != state) {
-                                        if (stateIsAir) {
-                                            block = state;
-                                            blockId = 0;
-                                        } else {
-                                            blockId = blockCache.computeIfAbsent(state, stateMapper::getIdForBlockState);
-                                            block = state;
-                                        }
-                                    }
-                                    data[G(x, y, z)] = Mapper.composeMappingId(light, blockId, biomeId);
+                                byte light = sectionData.getLightCompact(x, y, z);
+
+                                boolean isAir = blockId == 0;
+
+                                if (isAir && (light == 0)) {
+                                    continue;
                                 }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-        return section;
-    }
 
-    public static VoxelizedSection convert(Mapper stateMapper,
-                                           ExtendedBlockStorage blockData,
-                                           ChunkBiomes biomes,
-                                           ILightingSupplier lightSupplier,
-                                           int sx,
-                                           int sy,
-                                           int sz) {
-        var blockCache = BLOCK_CACHE.get();
-
-        var section = VoxelizedSection.createEmpty(sx, sy, sz);
-        var data = section.section;
-
-        IEbsExtension sectionData = (IEbsExtension) blockData;
-
-        int blockId = -1;
-        Block block = null;
-
-        for (int oy = 0; oy < 4; oy++) {
-            for (int oz = 0; oz < 4; oz++) {
-                for (int ox = 0; ox < 4; ox++) {
-
-                    int biomeId = biomes.getBiomeId(ox * 4, oz * 4);
-
-                    for (int iy = 0; iy < 4; iy++) {
-                        for (int iz = 0; iz < 4; iz++) {
-                            for (int ix = 0; ix < 4; ix++) {
-                                int x = (ox<<2)|ix;
-                                int y = (oy<<2)|iy;
-                                int z = (oz<<2)|iz;
-                                short blockIdd = (short) sectionData.getBlockId(x, y, z);
-                                short meta = (short) blockData.getExtBlockMetadata(x, y, z);
-                                byte light = lightSupplier.supply(x,y,z, state);
-
-                                boolean stateIsAir = Block.getBlockById(blockIdd).getMaterial() == Material.air;
-
-                                if (!(stateIsAir && (light==0))) {
-                                    if (block != state) {
-                                        if (stateIsAir) {
-                                            block = state;
-                                            blockId = 0;
-                                        } else {
-                                            blockId = blockCache.computeIfAbsent(state, stateMapper::getIdForBlockState);
-                                            block = state;
-                                        }
+                                if (blockP != block) {
+                                    if (isAir) {
+                                        blockP = block;
+                                        blockIdP = 0;
+                                    } else {
+                                        blockIdP = blockCache.computeIfAbsent(
+                                            block,
+                                            (compact) -> stateMapper.getIdForBlockState(blockId, meta)
+                                        );
+                                        blockP = block;
                                     }
-                                    data[G(x, y, z)] = Mapper.composeMappingId(light, blockId, biomeId);
                                 }
+
+                                data[G(x, y, z)] = Mapper.composeMappingId(light, blockIdP, biomeId);
                             }
                         }
                     }

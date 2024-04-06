@@ -2,20 +2,16 @@
   "required": true,
   "package": "me.cortex.voxy.client.mixin",
   "compatibilityLevel": "JAVA_17",
+  "plugin": "me.cortex.voxy.client.mixin.VoxyMixinPlugin",
   "client": [
     "joml.AccessFrustumIntersection",
-    "minecraft.MixinClientChunkManager",
-    "minecraft.MixinDebugHud",
-    "minecraft.MixinMinecraftClient",
     "minecraft.MixinRenderGlobal",
-    "sodium.MixinSodiumWorldRender",
-    "sodium.MixinDefaultChunkRenderer",
     "sodium.MixinChunkProviderClient",
-    "nvidium.MixinRenderPipeline"
+    "sodium.MixinDefaultChunkRenderer",
+    "minecraft.MixinEbsNeids",
+    "minecraft.MixinExtendedBlockStorage"
   ],
   "injectors": {
     "defaultRequire": 1
-  },
-  "mixins": [
-  ]
+  }
 }

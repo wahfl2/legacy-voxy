@@ -1,30 +1,16 @@
 package me.cortex.voxy.client.importers;
 
-import com.google.common.base.Supplier;
-import com.google.common.base.Suppliers;
-import com.gtnewhorizons.neid.mixins.interfaces.IExtendedBlockStorageMixin;
-import com.mojang.serialization.Codec;
-import me.cortex.voxy.client.Voxy;
 import me.cortex.voxy.client.core.util.ByteBufferBackedInputStream;
 import me.cortex.voxy.client.importers.util.ChunkBiomes;
 import me.cortex.voxy.client.importers.util.ChunkStreamVersion;
+import me.cortex.voxy.client.importers.util.SectionBlockData;
 import me.cortex.voxy.common.voxelization.VoxelizedSection;
 import me.cortex.voxy.common.voxelization.WorldConversionFactory;
 import me.cortex.voxy.common.world.WorldEngine;
-import net.minecraft.block.Block;
-import net.minecraft.block.BlockState;
-import net.minecraft.block.Blocks;
 import net.minecraft.nbt.CompressedStreamTools;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.nbt.NBTTagList;
 import net.minecraft.world.World;
-import net.minecraft.world.chunk.Chunk;
-import net.minecraft.world.chunk.NibbleArray;
-import net.minecraft.world.chunk.PalettedContainer;
-import net.minecraft.world.chunk.storage.AnvilChunkLoader;
-import net.minecraft.world.chunk.storage.ExtendedBlockStorage;
-import net.minecraft.world.chunk.storage.RegionFile;
-import net.minecraftforge.common.BiomeManager;
 import net.minecraftforge.common.util.Constants;
 import org.lwjgl.system.MemoryUtil;
 
@@ -36,9 +22,6 @@ import java.nio.ByteOrder;
 import java.nio.channels.FileChannel;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -51,19 +34,6 @@ public class WorldImporter {
     private final WorldEngine world;
     private final AtomicInteger totalRegions = new AtomicInteger();
     private final AtomicInteger regionsProcessed = new AtomicInteger();
-
-    private static final Supplier<List<BiomeManager.BiomeEntry>> ALL_BIOMES = Suppliers.memoize(() -> {
-        Set<BiomeManager.BiomeEntry> biomeSet = new HashSet<>();
-
-        for (var biomeType : BiomeManager.BiomeType.values()) {
-            var toAdd = BiomeManager.getBiomes(biomeType);
-            if (toAdd != null) {
-                biomeSet.addAll(toAdd);
-            }
-        }
-
-        return biomeSet.stream().toList();
-    });
 
     private volatile boolean isRunning;
     public WorldImporter(WorldEngine worldEngine, World mcWorld) {
@@ -207,52 +177,16 @@ public class WorldImporter {
         }
     }
 
-    private static int getIndex(int x, int y, int z) {
-        return y << 8 | z << 4 | x;
-    }
-
-    private static final Codec<PalettedContainer<BlockState>> BLOCK_STATE_CODEC = PalettedContainer.createPalettedContainerCodec(Block.STATE_IDS, BlockState.CODEC, PalettedContainer.PaletteProvider.BLOCK_STATE, Blocks.AIR.getDefaultState());
     private void importSectionNBT(int x, int y, int z, NBTTagCompound section, ChunkBiomes biomes) {
 //        if (section.getCompoundTag("block_states").isEmpty()) {
 //            return;
 //        }
 
-        byte[] blockLightData = section.getByteArray("BlockLight");
-        byte[] skyLightData = section.getByteArray("SkyLight");
-
-        NibbleArray blockLight;
-        if (blockLightData.length != 0) {
-            blockLight = new NibbleArray(blockLightData, 4);
-        } else {
-            blockLight = null;
-        }
-
-        NibbleArray skyLight;
-        if (skyLightData.length != 0) {
-            skyLight = new NibbleArray(skyLightData, 4);
-        } else {
-            skyLight = null;
-        }
-
         VoxelizedSection csec = WorldConversionFactory.convert(
                 this.world.getMapper(),
-                blockStates,
+                new SectionBlockData(section),
                 biomes,
-                (bx, by, bz, state) -> {
-                    int block = 0;
-                    int sky = 0;
-                    if (blockLight != null) {
-                        block = blockLight.get(bx, by, bz);
-                    }
-                    if (skyLight != null) {
-                        sky = skyLight.get(bx, by, bz);
-                    }
-                    sky = 15-sky;
-                    return (byte) (sky|(block<<4));
-                },
-                x,
-                y,
-                z
+                x, y, z
         );
 
         WorldConversionFactory.mipSection(csec, this.world.getMapper());

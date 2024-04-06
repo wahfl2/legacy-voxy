@@ -4,7 +4,7 @@ import it.unimi.dsi.fastutil.Pair;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import it.unimi.dsi.fastutil.objects.ObjectIntImmutablePair;
 import me.cortex.voxy.common.storage.StorageBackend;
-import net.minecraft.block.Block;
+import me.cortex.voxy.common.util.Util;
 import net.minecraftforge.common.BiomeManager;
 import org.lwjgl.system.MemoryUtil;
 
@@ -101,6 +101,7 @@ public class Mapper {
             }
         }
 
+        /*
         {
             //Insert garbage types into the mapping for those blocks, TODO:FIXME: Need to upgrade the type or have a solution to error blocks
             var rand = new Random();
@@ -114,6 +115,7 @@ public class Mapper {
                 }
             }
         }
+        */
 
         //Insert into the arrays
         sentries.stream().sorted(Comparator.comparing(a->a.id)).forEach(entry -> {
@@ -177,7 +179,7 @@ public class Mapper {
 
     public int getIdForBlockState(short blockId, short meta) {
         return this.block2stateEntry.computeIfAbsent(
-            compactIdMeta(blockId, meta),
+            Util.compactIdMeta(blockId, meta),
             compact -> this.registerNewBlockState(blockId, meta)
         ).id;
     }
@@ -259,10 +261,6 @@ public class Mapper {
         this.storage.flush();
     }
 
-    private static int compactIdMeta(short id, short meta) {
-        return id << 16 | meta;
-    }
-
     public static final class StateEntry {
         public final int id;
         public final short blockId;
@@ -275,7 +273,7 @@ public class Mapper {
         }
 
         public int getCompactIdMeta() {
-            return compactIdMeta(blockId, meta);
+            return Util.compactIdMeta(blockId, meta);
         }
 
         public boolean isAir() {

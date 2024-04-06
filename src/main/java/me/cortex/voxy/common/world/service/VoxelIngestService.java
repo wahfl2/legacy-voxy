@@ -1,9 +1,9 @@
 package me.cortex.voxy.common.world.service;
 
 import com.gtnewhorizons.angelica.compat.mojang.ChunkSectionPos;
-import com.gtnewhorizons.neid.mixins.interfaces.IExtendedBlockStorageMixin;
 import it.unimi.dsi.fastutil.Pair;
 import me.cortex.voxy.client.importers.util.ChunkBiomes;
+import me.cortex.voxy.common.voxelization.ISectionDataProvider;
 import me.cortex.voxy.common.voxelization.VoxelizedSection;
 import me.cortex.voxy.common.voxelization.WorldConversionFactory;
 import me.cortex.voxy.common.world.WorldEngine;
@@ -49,37 +49,18 @@ public class VoxelIngestService {
             int i = -1;
             for (var section : chunk.getBlockStorageArray()) {
                 i++;
-                var lighting = this.captureLightMap.remove(ChunkSectionPos.from(chunk.xPosition, chunk.zPosition, i).asLong());
+
                 if (section.isEmpty()) {
                     this.world.insertUpdate(VoxelizedSection.createEmpty(chunk.xPosition, i, chunk.zPosition));
                 } else {
-                    VoxelizedSection csec;
-                    if (section instanceof IExtendedBlockStorageMixin ebsMixin) {
-
-                    } else {
-                        csec = WorldConversionFactory.convert(
-                            this.world.getMapper(),
-                            section,
-                            biomes,
-                            (x, y, z, state) -> {
-                                if (lighting == null || (lighting.first() != null && lighting.second()!=null)) {
-                                    return (byte) 0x0f;
-                                } else {
-                                    //Lighting is a piece of shit cause its done per face
-                                    int block = lighting.first()!=null?Math.min(15,lighting.first().get(x, y, z)):0;
-                                    int sky = lighting.second()!=null?Math.min(15,lighting.second().get(x, y, z)):0;
-                                    if (block < state.getLightValue()) {
-                                        block = state.getLightValue();
-                                    }
-                                    sky = 15-sky;//This is cause sky light is inverted which saves memory when saving empty sections
-                                    return (byte) (sky|(block<<4));
-                                }
-                            },
-                            chunk.xPosition,
-                            i,
-                            chunk.zPosition
-                        );
-                    }
+                    VoxelizedSection csec = WorldConversionFactory.convert(
+                        this.world.getMapper(),
+                        (ISectionDataProvider) section,
+                        biomes,
+                        chunk.xPosition,
+                        i,
+                        chunk.zPosition
+                    );
 
                     WorldConversionFactory.mipSection(csec, this.world.getMapper());
                     this.world.insertUpdate(csec);
