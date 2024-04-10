@@ -43,7 +43,7 @@ dependencies {
     runtimeOnlyNonPublishable("com.github.GTNewHorizons:NotEnoughItems:2.5.4-GTNH:dev")
 
     implementation("org.joml:joml:1.10.5")
-    implementation("com.github.GTNewHorizons:lwjgl3ify:2.0.2:dev")
+    implementation("com.github.GTNewHorizons:lwjgl3ify:2.0.4:dev")
     implementation("com.github.GTNewHorizons:Angelica:1.0.0-alpha35:dev")
     implementation("org.rocksdb:rocksdbjni:8.10.0")
     implementation("redis.clients:jedis:5.1.0")
