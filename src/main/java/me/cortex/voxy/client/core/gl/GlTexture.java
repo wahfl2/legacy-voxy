@@ -1,15 +1,11 @@
 package me.cortex.voxy.client.core.gl;
 
-import me.cortex.voxy.common.util.TrackedObject;
-
-import static org.lwjgl.opengl.ARBFramebufferObject.glDeleteFramebuffers;
-import static org.lwjgl.opengl.ARBFramebufferObject.glGenFramebuffers;
 import static org.lwjgl.opengl.GL11C.GL_TEXTURE_2D;
 import static org.lwjgl.opengl.GL11C.glDeleteTextures;
 import static org.lwjgl.opengl.GL45C.glCreateTextures;
 import static org.lwjgl.opengl.GL45C.glTextureStorage2D;
 
-public class GlTexture extends TrackedObject {
+public class GlTexture {
     public final int id;
     private final int type;
     public GlTexture() {
@@ -30,9 +26,7 @@ public class GlTexture extends TrackedObject {
         return this;
     }
 
-    @Override
     public void free() {
-        super.free0();
         glDeleteTextures(this.id);
     }
 }

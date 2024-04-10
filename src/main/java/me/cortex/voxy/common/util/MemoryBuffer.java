@@ -2,7 +2,7 @@ package me.cortex.voxy.common.util;
 
 import org.lwjgl.system.MemoryUtil;
 
-public class MemoryBuffer extends TrackedObject {
+public class MemoryBuffer {
     public final long address;
     public final long size;
 
@@ -12,13 +12,11 @@ public class MemoryBuffer extends TrackedObject {
     }
 
     public void cpyTo(long dst) {
-        super.assertNotFreed();
+        // super.assertNotFreed();
         MemoryUtil.memCopy(this.address, dst, this.size);
     }
 
-    @Override
     public void free() {
-        super.free0();
         MemoryUtil.nmemFree(this.address);
     }
 

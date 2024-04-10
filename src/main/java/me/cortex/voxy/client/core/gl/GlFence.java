@@ -1,10 +1,8 @@
 package me.cortex.voxy.client.core.gl;
 
-import me.cortex.voxy.common.util.TrackedObject;
-
 import static org.lwjgl.opengl.GL32.*;
 
-public class GlFence extends TrackedObject {
+public class GlFence {
     private final long fence;
     private boolean signaled;
 
@@ -24,9 +22,7 @@ public class GlFence extends TrackedObject {
         return this.signaled;
     }
 
-    @Override
     public void free() {
-        super.free0();
         glDeleteSync(this.fence);
     }
 }

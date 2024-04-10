@@ -1,6 +1,5 @@
 package me.cortex.voxy.client.core.gl.shader;
 
-import me.cortex.voxy.common.util.TrackedObject;
 import org.lwjgl.opengl.GL20C;
 
 import java.util.HashMap;
@@ -9,7 +8,7 @@ import java.util.Map;
 import static org.lwjgl.opengl.GL20.glDeleteProgram;
 import static org.lwjgl.opengl.GL20.glUseProgram;
 
-public class Shader extends TrackedObject {
+public class Shader {
     private final int id;
     private Shader(int program) {
         id = program;
@@ -32,7 +31,6 @@ public class Shader extends TrackedObject {
     }
 
     public void free() {
-        super.free0();
         glDeleteProgram(this.id);
     }
 
