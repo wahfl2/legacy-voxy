@@ -1,5 +1,6 @@
 package me.cortex.voxy.client.core.rendering;
 
+import com.github.bsideup.jabel.Desugar;
 import it.unimi.dsi.fastutil.ints.IntArrayList;
 import it.unimi.dsi.fastutil.longs.Long2IntOpenHashMap;
 import it.unimi.dsi.fastutil.longs.LongArrayList;
@@ -156,6 +157,7 @@ public class GeometryManager {
 
     //TODO: pack the offsets of each axis so that implicit face culling can work
     //Note! the opaquePreDataCount and translucentPreDataCount are never writen to the meta buffer, as they are indexed in reverse relative to the base opaque and translucent geometry
+    @Desugar
     private record SectionMeta(long position, int aabb, int geometryPtr, int size, int[] offsets) {
         public void writeMetadata(long ptr) {
             //THIS IS DUE TO ENDIANNESS and that we are splitting a long into 2 ints

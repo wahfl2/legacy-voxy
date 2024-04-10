@@ -1,5 +1,7 @@
 package me.cortex.voxy.common.util;
 
+import com.github.bsideup.jabel.Desugar;
+
 import java.lang.ref.Cleaner;
 
 public abstract class TrackedObject {
@@ -28,7 +30,7 @@ public abstract class TrackedObject {
         return this.ref.freedRef[0];
     }
 
-    public record Ref(Cleaner.Cleanable cleanable, boolean[] freedRef) {}
+    @Desugar public record Ref(Cleaner.Cleanable cleanable, boolean[] freedRef) {}
 
     private static final Cleaner cleaner = Cleaner.create();
     public static Ref register(Object obj) {

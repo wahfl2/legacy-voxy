@@ -1,22 +1,21 @@
 package me.cortex.voxy.client.core.rendering.building;
 
+import com.github.bsideup.jabel.Desugar;
 import it.unimi.dsi.fastutil.longs.Long2ObjectLinkedOpenHashMap;
 import me.cortex.voxy.client.core.model.IdNotYetComputedException;
 import me.cortex.voxy.client.core.model.ModelManager;
 import me.cortex.voxy.common.world.WorldEngine;
 import me.cortex.voxy.common.world.WorldSection;
 
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Semaphore;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
-import java.util.function.ToIntFunction;
 
 //TODO: Add a render cache
 public class RenderGenerationService {
 
     public interface TaskChecker {boolean check(int lvl, int x, int y, int z);}
-    private record BuildTask(Supplier<WorldSection> sectionSupplier) {}
+    @Desugar private record BuildTask(Supplier<WorldSection> sectionSupplier) {}
 
     private volatile boolean running = true;
     private final Thread[] workers;
